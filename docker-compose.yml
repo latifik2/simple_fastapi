@@ -3,6 +3,8 @@ version: '3.7'
 volumes:
     postgres:
     pgadmin:
+    prometheus_data:
+    grafana-storage:
 
 services:
   app:
@@ -24,3 +26,32 @@ services:
     ports:
       - 5431:5432
     restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - '9090:9090'
+
+  grafana:
+    image: grafana/grafana:12.1
+    container_name: grafana
+    restart: unless-stopped
+    # if you are running as root then set it to 0
+    # else find the right id with the id -u command
+    user: '0'
+    ports:
+      - '3000:3000'
+    # adding the mount volume point which we create earlier
+    volumes:
+      - grafana-storage:/var/lib/grafana
